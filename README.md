@@ -179,26 +179,44 @@ SELECT * FROM requests LIMIT 10;
 
 ## Задание 6: Извлечение Terraform из Docker образа
 
-### Процесс извлечения:
+
+### Скопировать бинарный файл /bin/terraform на локальную машину, используя dive и docker save.
 
 ```bash
 # Скачивание образа
 docker pull hashicorp/terraform:latest
 
-# Извлечение бинарника
-docker run --rm -v $(pwd):/output hashicorp/terraform:latest cp /bin/terraform /output/
-
-# Проверка
-./terraform version
+# Просматриваем образ в Dive, находим слой в котором находится /bin/terraform
+dive hashicorp/terraform:latest
 ```
 
-![Скриншот извлечения Terraform](images/d_z6_1.png))
+![Скриншот поиска слоя в котором terraform](images/d_z6_1_1.png))
+
+```bash
+# Сохраняем образ
+docker save hashicorp/terraform:latest -o terraform.tar
+
+# Извлекаем архив
+mkdir -p temp_extract
+tar -xf terraform.tar -C temp_extract/
+
+# Извлекаем бинарник из известного слоя
+tar -xf "temp_extract/blobs/sha256/56cfe20bb05ee957a1f2490531f6972e754fa00a625a3ad467f317f5fff67e72" -C ./ bin/terraform
+chmod +x ./bin/terraform
+
+# Очищаем от лишнего 
+rm -rf temp_extract terraform.tar
+
+# Получаем версию о бенарнике terraform
+echo "Успешно извлечено: $(./bin/terraform version)"
+```
+![Скриншот поиска слоя в котором terraform](images/d_z6_1_2.png))
 
 ### Результат:
 - Бинарный файл `terraform` успешно извлечен из образа
 - Размер: ~100 MB
 - Архитектура: x86_64
-- Версия: Terraform v1.6.0
+- Версия: Terraform v1.13.3
 
 ---
 
@@ -222,7 +240,7 @@ docker rm temp-terraform
 
 ![Скриншот docker cp метода](images/d_z6_2.png))
 
-**Результат:** Оба метода успешно работают, бинарники идентичны.
+**Результат:** Оба метода успешно работают.
 
 ---
 
